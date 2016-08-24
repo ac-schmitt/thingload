@@ -1,2 +1,5 @@
 nose
 sphinx
+pexpect
+paho-mqtt
+AWSIoTPythonSDK
