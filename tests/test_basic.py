@@ -1,6 +1,6 @@
 # -*- coding: utf-8 -*-
 
-from .context import fanthing
+from .context import thingload
 
 import unittest
 
