@@ -16,7 +16,6 @@
  '''
 
 from .context import thingload
-
 import unittest
 
 

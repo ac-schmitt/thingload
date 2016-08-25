@@ -25,9 +25,30 @@ import time
 
 from AWSIoTPythonSDK.MQTTLib import AWSIoTMQTTShadowClient
 
-import config
+from . import config
 
 logger = None
+
+# Usage
+usageInfo = """Usage:
+python -m thingload -r <rootCAFilePath> -c <certFilePath> -k <privateKeyFilePath>
+Type "python -m thingload -h" for available options.
+"""
+
+# Help info
+helpInfo = """-e, --endpoint
+    Your AWS IoT custom endpoint
+-r, --rootCA
+    Root CA file path
+-c, --cert
+    Certificate file path
+-k, --key
+    Private key file path
+-v, --verbose
+    Print Debug logs
+-h, --help
+    Help information
+"""
 
 
 def customShadowCallback_Update(payload, responseStatus, token):
@@ -78,15 +99,15 @@ def publishCpuLoad(shadow):
         shadow.shadowUpdate(JSONPayload, customShadowCallback_Update, 5)
 
 
-def createIoTShadowClient(thingname, keyPath, certPath):
+def createIoTShadowClient(endpoint, thingname, keyPath, certPath, rootCaPath):
     # For certificate based connection
     myShadowClient = AWSIoTMQTTShadowClient(thingname)
     # Configurations
     # For TLS mutual authentication
     myShadowClient.configureEndpoint(
-        config.aws_iot_endpoint(), config.aws_iot_port())
+        endpoint, config.aws_iot_port())
     myShadowClient.configureCredentials(
-        config.aws_iot_capath(), keyPath, certPath)
+        rootCaPath, keyPath, certPath)
     myShadowClient.configureConnectDisconnectTimeout(10)
     myShadowClient.configureMQTTOperationTimeout(5)
     return myShadowClient
@@ -103,27 +124,56 @@ def createIoTShadow(shadowClient, thingname):
     return myDeviceShadow
 
 
-def main(argv):
+def fetchCommandLineParameters(argv):
+    # get defaults
+    endpoint = config.aws_iot_endpoint()
     keyPath = config.aws_iot_keypath()
     certPath = config.aws_iot_certpath()
+    rootCaPath = config.aws_iot_capath()
     thingName = config.aws_iot_thingname()
 
+    # and on with the wild lucy
     try:
-        opts, args = getopt.getopt(argv, "k:c:t:v")
-    except getopt.GetoptError:
-        print("<script> -k <keyPath> -c <certPath> -t <thingName> -v")
-        sys.exit(2)
-    for opt, arg in opts:
-        if opt == "-k":
-            keyPath = arg
-        elif opt == "-c":
-            certPath = arg
-        elif opt == "-t":
-            thingName = arg
-        elif opt == "-v":
-            logger.setLevel(logging.DEBUG)
+        opts, args = \
+            getopt.getopt(argv, "he:k:c:r:t:v", ["help", "endpoint=", "key=", "cert=", "rootCA=", "thing"])
+        if len(opts) == 0:
+            raise getopt.GetoptError("No input parameters!")
+        for opt, arg in opts:
+            if opt in ("-h", "--help"):
+                print(helpInfo)
+                exit(0)
+            if opt in ("-e", "--endpoint"):
+                endpoint = arg
+            if opt in ("-r", "--rootCA"):
+                rootCaPath = arg
+            if opt in ("-k", "--key"):
+                keyPath = arg
+            if opt in ("-c", "--cert"):
+                certPath = arg
+            if opt in ("-t", "--thing"):
+                thingName = arg
+            if opt in ("-v", "--verbose"):
+                logger.setLevel(logging.DEBUG)
 
-    shadowClient = createIoTShadowClient(thingName, keyPath, certPath)
+    except getopt.GetoptError:
+        print(usageInfo)
+        sys.exit(1)
+
+    return endpoint, keyPath, certPath, rootCaPath, thingName
+
+
+def main(argv):
+    # init logger first
+    logger = logging.getLogger("core")
+    streamHandler = logging.StreamHandler()
+    formatter = logging.Formatter(
+        '%(asctime)s - %(name)s - %(levelname)s - %(message)s')
+    streamHandler.setFormatter(formatter)
+    logger.addHandler(streamHandler)
+
+    endpoint, keyPath, certPath, rootCaPath, thingName = fetchCommandLineParameters(argv)
+
+    shadowClient = createIoTShadowClient(endpoint, thingName, keyPath, certPath, rootCaPath)
     shadow = createIoTShadow(shadowClient, thingName)
 
     loopCount = 0
@@ -134,10 +184,4 @@ def main(argv):
 
 
 if __name__ == "__main__":
-    logger = logging.getLogger("core")
-    streamHandler = logging.StreamHandler()
-    formatter = logging.Formatter(
-        '%(asctime)s - %(name)s - %(levelname)s - %(message)s')
-    streamHandler.setFormatter(formatter)
-    logger.addHandler(streamHandler)
     main(sys.argv[1:])
