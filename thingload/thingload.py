@@ -27,7 +27,6 @@ from AWSIoTPythonSDK.MQTTLib import AWSIoTMQTTShadowClient
 
 from . import config
 
-logger = None
 
 # Usage
 usageInfo = """Usage:
@@ -132,7 +131,6 @@ def fetchCommandLineParameters(argv):
     rootCaPath = config.aws_iot_capath()
     thingName = config.aws_iot_thingname()
 
-    # and on with the wild lucy
     try:
         opts, args = \
             getopt.getopt(argv, "he:k:c:r:t:v", ["help", "endpoint=", "key=", "cert=", "rootCA=", "thing"])
@@ -153,7 +151,7 @@ def fetchCommandLineParameters(argv):
             if opt in ("-t", "--thing"):
                 thingName = arg
             if opt in ("-v", "--verbose"):
-                logger.setLevel(logging.DEBUG)
+                logging.getLogger("core").setLevel(logging.DEBUG)
 
     except getopt.GetoptError:
         print(usageInfo)
