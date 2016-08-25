@@ -7,7 +7,7 @@ import unittest
 
 class AdvancedTestSuite(unittest.TestCase):
     """Advanced test cases."""
-    
+
     def test_cpuload(self):
         assert thingload.fetchCpuLoad() != "unknown"
 
