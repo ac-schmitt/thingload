@@ -34,3 +34,7 @@ ____________________
 Usage
 ~~~~~
 
+python -m thingload -r <rootCAFilePath> -c <certFilePath> -k <privateKeyFilePath>
+
+Example:
+python -m thingload -r "D:\VeriSign-Class 3-Public-Primary-Certification-Authority-G5.pem" -k "D:\1234567890-private.pem.key" -c "D:\1234567890-certificate.pem.crt" -t MyComputer
